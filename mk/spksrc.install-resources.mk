@@ -21,6 +21,12 @@ endif
 DIST_FILE     = $(DISTRIB_DIR)/$(LOCAL_FILE)
 DIST_EXT      = $(PKG_EXT)
 
+ifneq ($(ARCH),)
+ARCH_SUFFIX = -$(ARCH)-$(TCVERSION)
+TC = syno$(ARCH_SUFFIX)
+endif
+
+
 #####
 
 ifneq ($(REQUIRE_KERNEL),)
@@ -47,22 +53,9 @@ include ../../mk/spksrc.patch.mk
 install: patch
 include ../../mk/spksrc.install.mk
 
-ifeq ($(strip $(PLIST_TRANSFORM)),)
-PLIST_TRANSFORM= cat
-endif
+plist: install
+include ../../mk/spksrc.plist.mk
 
-.PHONY: cat_PLIST
-cat_PLIST:
-	@for depend in $(DEPENDS) ; \
-	do                          \
-	  $(MAKE) WORK_DIR=$(WORK_DIR) --no-print-directory -C ../../$$depend cat_PLIST ; \
-	done
-	@if [ -f PLIST ] ; \
-	then \
-	  $(PLIST_TRANSFORM) PLIST ; \
-	else \
-	  $(MSG) "No PLIST for $(NAME)" >&2; \
-	fi
 
 ### Clean rules
 smart-clean:
@@ -70,27 +63,12 @@ smart-clean:
 	rm -f $(WORK_DIR)/.$(COOKIE_PREFIX)*
 
 clean:
-	rm -fr work work-*
+	rm -fr work work-* build-*.log
 
+all: install plist
 
-all: install
-
-sha1sum := $(shell which sha1sum 2>/dev/null || which gsha1sum 2>/dev/null)
-sha256sum := $(shell which sha256sum 2>/dev/null || which gsha256sum 2>/dev/null)
-md5sum := $(shell which md5sum 2>/dev/null || which gmd5sum 2>/dev/null || which md5 2>/dev/null)
-
-.PHONY: $(DIGESTS_FILE)
-$(DIGESTS_FILE): download
-	@$(MSG) "Generating digests for $(PKG_NAME)"
-	@rm -f $@ && touch -f $@
-	@for type in SHA1 SHA256 MD5; do \
-	  case $$type in \
-	    SHA1)     tool=${sha1sum} ;; \
-	    SHA256)	  tool=${sha256sum} ;; \
-	    MD5)      tool=${md5sum} ;; \
-	  esac ; \
-	  echo "$(LOCAL_FILE) $$type `$$tool $(DIST_FILE) | cut -d\" \" -f1`" >> $@ ; \
-	done
+### For make digests
+include ../../mk/spksrc.generate-digests.mk
 
 ### For make dependency-tree
 include ../../mk/spksrc.dependency-tree.mk
@@ -102,6 +80,6 @@ all-archs: $(addprefix arch-,$(AVAILABLE_TOOLCHAINS))
 
 arch-%:
 	@$(MSG) Building package for arch $*
-	-@MAKEFLAGS= $(MAKE) ARCH=$(basename $(subst -,.,$(basename $(subst .,,$*)))) TCVERSION=$(if $(findstring $*,$(basename $(subst -,.,$(basename $(subst .,,$*))))),$(DEFAULT_TC),$(notdir $(subst -,/,$*)))
+	@MAKEFLAGS= $(MAKE) ARCH=$(basename $(subst -,.,$(basename $(subst .,,$*)))) TCVERSION=$(if $(findstring $*,$(basename $(subst -,.,$(basename $(subst .,,$*))))),$(DEFAULT_TC),$(notdir $(subst -,/,$*)))  2>&1 | tee --append build-$*.log
 
 ####

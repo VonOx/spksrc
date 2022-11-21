@@ -1,5 +1,5 @@
 PKG_NAME = pinentry
-PKG_VERS = 1.1.0
+PKG_VERS = 1.1.1
 PKG_EXT = tar.bz2
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://www.gnupg.org/ftp/gcrypt/$(PKG_NAME)
@@ -9,7 +9,7 @@ HOMEPAGE = https://www.gnupg.org/related_software/pinentry/
 COMMENT  = pinentry is a small collection of dialog programs that allow GnuPG to read passphrases and PIN numbers in a secure manner.
 LICENSE  = LGPLv2+
 
-DEPENDS = cross/libassuan cross/libgpg-error cross/ncurses
+DEPENDS = cross/ncursesw cross/libassuan cross/libgpg-error
 
 GNU_CONFIGURE = 1
 CONFIGURE_ARGS = --enable-pinentry-curses

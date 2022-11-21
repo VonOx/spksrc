@@ -1,31 +1,60 @@
 SPK_NAME = synocli-file
-SPK_VERS = 2.2
-SPK_REV = 8
+SPK_VERS = 2.7
+SPK_REV = 18
 SPK_ICON = src/synocli-file.png
 
-DEPENDS = cross/less cross/tree cross/ncdu cross/jdupes cross/rhash cross/mc cross/nano cross/file
-DEPENDS += cross/detox cross/pcre2
-DEPENDS += cross/zstd cross/lzip cross/plzip
-DEPENDS += cross/fdupes
-OPTIONAL_DEPENDS = cross/rmlint cross/rnm cross/micro cross/fzf
+# packages depending on cross/zlib must be defined later, see below
+DEPENDS = cross/less cross/tree cross/ncdu cross/jdupes cross/rhash cross/nano cross/file
+DEPENDS += cross/detox
+DEPENDS += cross/lzip cross/plzip
+DEPENDS += cross/mg
+DEPENDS += cross/jupp
+DEPENDS += cross/iconv
+DEPENDS += cross/dos2unix
+
+OPTIONAL_DEPENDS  = cross/rmlint cross/rnm cross/micro cross/fzf cross/ripgrep cross/fd cross/sd
+OPTIONAL_DEPENDS += cross/bat cross/exa
+OPTIONAL_DEPENDS += cross/nnn
 
 MAINTAINER = SynoCommunity
 DISPLAY_NAME = SynoCli File Tools
 
+POST_STRIP_TARGET = synocli-file_extra_install
+
 OPTIONAL_DESC =
 
-include ../../mk/spksrc.archs.mk
+include ../../mk/spksrc.common.mk
+
+# rust issue with target 'armv5te-unknown-linux-gnueabi'
+# https://github.com/rust-lang/compiler-builtins/issues/420
+ifneq ($(findstring $(ARCH),$(OLD_PPC_ARCHS) $(ARMv5_ARCHS)),$(ARCH))
+# build rust tools before packages depending on cross/zlib
+# These tools must use cross/zlib-ng instead of cross/zlib, otherwise will fail to find zlib (x64 only)
+DEPENDS += cross/bat cross/exa
+OPTIONAL_DESC := $(OPTIONAL_DESC)", bat, exa"
+endif
 
 # PPC archs except QorIQ
 ifneq ($(findstring $(ARCH),$(OLD_PPC_ARCHS)),$(ARCH))
+# rmlint must be built before "cross/mc cross/pcre2 cross/fdupes cross/zstd"
+# to use libblkid and support reflink
 DEPENDS += cross/rmlint
 OPTIONAL_DESC := $(OPTIONAL_DESC)", rmlint"
 endif
 
+# packages depending on cross/zlib
+DEPENDS += cross/mc cross/pcre2 cross/fdupes cross/zstd
+
 ifneq ($(findstring $(ARCH),$(OLD_PPC_ARCHS) $(ARMv5_ARCHS)),$(ARCH))
-# to build rnm, GCC >= 4.8 is required, but not contained in older toolchains.
+# gcc with stdc++11 support
+ifneq ($(call version_lt, ${TCVERSION}, 6.0)$(call version_ge, ${TCVERSION}, 3.0),11)
+# to build rnm, GCC >= 4.8 is required
 DEPENDS += cross/rnm
 OPTIONAL_DESC := $(OPTIONAL_DESC)", rnm"
+# to build nnn -std=c11 is required
+DEPENDS += cross/nnn
+OPTIONAL_DESC := $(OPTIONAL_DESC)", nnn (n³)"
+endif
 endif
 
 # PPC archs are not supported with golang
@@ -34,13 +63,24 @@ DEPENDS += cross/micro cross/fzf
 OPTIONAL_DESC := $(OPTIONAL_DESC)", micro (editor), fzf (fuzzy finder)"
 endif
 
+ifneq ($(findstring $(ARCH),$(OLD_PPC_ARCHS)),$(ARCH))
+DEPENDS += cross/ripgrep
+OPTIONAL_DESC := $(OPTIONAL_DESC)", rg (ripgrep)"
+DEPENDS += cross/fd
+OPTIONAL_DESC := $(OPTIONAL_DESC)", fd (fd-find)"
+DEPENDS += cross/sd
+OPTIONAL_DESC := $(OPTIONAL_DESC)", sd (sed alternative)"
+endif
+
 # activate additional features for pcre2grep and pcre2test
-PCRE2_CLI_FULL=1
+PCRE2_CLI_FULL = 1
 export PCRE2_CLI_FULL
 
-DESCRIPTION = "SynoCli File Tools provides a set of small command-line utilities: less, tree, ncdu, jdupes, fdupes, rhash, mc \(midnight commander\), nano, file, detox, pcre2, zstd, lzip, plzip$(OPTIONAL_DESC)."
+DESCRIPTION = "SynoCli File Tools provide a set of small command-line utilities: less, tree, ncdu, jdupes, fdupes, rhash, mc \(midnight commander\), mg \(emacs-like text editor\), nano, jupp \(based on JOE - Joe\'s Own Editor 3.1\), file, detox, pcre2, zstd, lzip, plzip, detox, iconv, dos2unix tools$(OPTIONAL_DESC)."
 STARTABLE = no
-CHANGELOG = "1. Add micro (editor)<br/>2. Add Lzip and Plzip<br/>3. Add fzf (fuzzy finder)<br/>4. Update mc to version 4.8.26"
+CHANGELOG = "1. Update rmlint to support reflink, find nonstripped binaries and to read json caches.<br/>2. Update file to v5.39.<br/>3. Update fdupes to v2.2.1.<br/>4. Update jdupes to v1.21.0.<br/>5. Update fzf to v.0.34.0<br/>6. Update tree to v2.0.4.<br/>7. Update bat to v0.22.1."
+
+SERVICE_SETUP = src/service-setup.sh
 
 HOMEPAGE = https://github.com/SynoCommunity/spksrc/wiki/FAQ-SynoCliFile
 LICENSE  = Each tool is licensed under it's respective license.
@@ -61,12 +101,23 @@ SPK_COMMANDS += bin/lzip bin/plzip
 SPK_COMMANDS += bin/fdupes
 SPK_COMMANDS += bin/micro
 SPK_COMMANDS += bin/fzf
+SPK_COMMANDS += bin/rg
+SPK_COMMANDS += bin/fd
+SPK_COMMANDS += bin/sd
+SPK_COMMANDS += bin/mg
+SPK_COMMANDS += bin/bat
+SPK_COMMANDS += bin/exa
+SPK_COMMANDS += bin/jmacs bin/joe bin/jpico bin/jstar bin/jupp bin/rjoe
+SPK_COMMANDS += bin/nnn
+SPK_COMMANDS += bin/iconv
+SPK_COMMANDS += bin/dos2unix bin/unix2dos bin/mac2unix bin/unix2mac 
 
 SPK_COMMANDS += bin/rhash
 SPK_COMMANDS += bin/ed2k-link
 SPK_COMMANDS += bin/edonr256-hash
 SPK_COMMANDS += bin/edonr512-hash
-SPK_COMMANDS += bin/gost-hash
+SPK_COMMANDS += bin/gost12-256-hash
+SPK_COMMANDS += bin/gost12-512-hash
 SPK_COMMANDS += bin/has160-hash
 SPK_COMMANDS += bin/magnet-link
 SPK_COMMANDS += bin/sfv-hash
@@ -75,3 +126,8 @@ SPK_COMMANDS += bin/tth-hash
 SPK_COMMANDS += bin/whirlpool-hash
 
 include ../../mk/spksrc.spk.mk
+
+.PHONY: synocli-file_extra_install
+synocli-file_extra_install:
+	@$(MSG) "Set library runpath in rhash executable."
+	@patchelf --set-rpath /var/packages/$(SPK_NAME)/target/lib $(STAGING_DIR)/bin/rhash

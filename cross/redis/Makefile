@@ -1,5 +1,5 @@
 PKG_NAME = redis
-PKG_VERS = 5.0.7
+PKG_VERS = 7.0.4
 PKG_EXT = tar.gz
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://download.redis.io/releases
@@ -13,8 +13,6 @@ LICENSE  = BSD
 
 include ../../mk/spksrc.archs.mk
 
-GNU_CONFIGURE = 1
-
 # Link to atomic library for QorIQ architecture
 ifneq ($(findstring $(ARCH),qoriq),)
 CONFIGURE_TARGET = redis_patch_makefile_to_use_atomic_library
@@ -22,7 +20,7 @@ else
 CONFIGURE_TARGET = nop
 endif
 
-INSTALL_TARGET = redis_install
+INSTALL_MAKE_OPTIONS = install PREFIX=$(STAGING_INSTALL_PREFIX)
 
 # use jemalloc for intel archs
 ifeq ($(findstring $(ARCH),$(x64_ARCHS) $(i686_ARCHS)),$(ARCH))
@@ -35,8 +33,4 @@ include ../../mk/spksrc.cross-cc.mk
 
 .PHONY: redis_patch_makefile_to_use_atomic_library
 redis_patch_makefile_to_use_atomic_library:
-	$(RUN) sed -i 's/^FINAL_LIBS=-lm/FINAL_LIBS=-lm -latomic/' $(WORK_DIR)/$(PKG_DIR)/src/Makefile
-
-.PHONY: redis_install
-redis_install:
-	$(RUN) $(MAKE) install PREFIX=$(STAGING_INSTALL_PREFIX)
+	@$(RUN) sed -i 's/^FINAL_LIBS=-lm/FINAL_LIBS=-lm -latomic/' $(WORK_DIR)/$(PKG_DIR)/src/Makefile

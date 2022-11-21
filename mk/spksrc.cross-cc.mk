@@ -1,3 +1,6 @@
+# Default make programs
+#
+
 # Common makefiles
 include ../../mk/spksrc.common.mk
 include ../../mk/spksrc.directories.mk
@@ -18,7 +21,6 @@ ifneq ($(ARCH),)
 ARCH_SUFFIX = -$(ARCH)-$(TCVERSION)
 TC = syno$(ARCH_SUFFIX)
 endif
-
 
 #####
 
@@ -58,8 +60,7 @@ smart-clean:
 	rm -f $(WORK_DIR)/.$(COOKIE_PREFIX)*
 
 clean:
-	rm -fr work work-*
-
+	rm -fr work work-* build-*.log
 
 all: install plist
 
@@ -77,8 +78,43 @@ all-archs: $(addprefix arch-,$(AVAILABLE_TOOLCHAINS))
 
 ####
 
+all-supported: SHELL:=/bin/bash
+all-supported:
+	@$(MSG) Pre-build native dependencies for parallel build
+	@for depend in $$($(MAKE) dependency-list) ; \
+	do \
+	  if [ "$${depend%/*}" = "native" ]; then \
+	    $(MSG) "Pre-processing $${depend}" ; \
+	    $(MSG) "  env $(ENV) $(MAKE) -C ../../$$depend" ; \
+	    env $(ENV) $(MAKE) -C ../../$$depend 2>&1 | tee --append build-$${depend%/*}-$${depend#*/}.log ; \
+	    [ $${PIPESTATUS[0]} -eq 0 ] || false ; \
+	  fi ; \
+	done ; \
+	$(MAKE) $(addprefix supported-arch-,$(SUPPORTED_ARCHS))
+
+supported-arch-%:
+	@$(MSG) BUILDING package for arch $* with SynoCommunity toolchain
+	-@MAKEFLAGS= $(PSTAT_TIME) $(MAKE) arch-$* 2>&1 | tee --append build-$*.log
+
+cross-cc_msg:
+ifneq ($(filter 1 on ON,$(PSTAT)),)
+	@$(MSG) MAKELEVEL: $(MAKELEVEL), PARALLEL_MAKE: $(PARALLEL_MAKE), ARCH: $(subst build-arch-,,$(MAKECMDGOALS)), NAME: $(NAME) >> $(PSTAT_LOG)
+endif
+
 arch-%:
+	@$(MSG) Building package for arch $(or $(filter $(addprefix %, $(DEFAULT_TC)), $(filter %$(word 2,$(subst -, ,$*)), $(filter $(firstword $(subst -, ,$*))%, $(AVAILABLE_TOOLCHAINS)))), $*)
+	$(MAKE) $(addprefix build-arch-, $(or $(filter $(addprefix %, $(DEFAULT_TC)), $(filter %$(word 2,$(subst -, ,$*)), $(filter $(firstword $(subst -, ,$*))%, $(AVAILABLE_TOOLCHAINS)))),$*))
+
+build-arch-%: SHELL:=/bin/bash
+build-arch-%: cross-cc_msg
 	@$(MSG) Building package for arch $*
-	-@MAKEFLAGS= $(MAKE) ARCH=$(basename $(subst -,.,$(basename $(subst .,,$*)))) TCVERSION=$(if $(findstring $*,$(basename $(subst -,.,$(basename $(subst .,,$*))))),$(DEFAULT_TC),$(notdir $(subst -,/,$*)))
+ifneq ($(filter 1 on ON,$(PSTAT)),)
+	@$(MSG) MAKELEVEL: $(MAKELEVEL), PARALLEL_MAKE: $(PARALLEL_MAKE), ARCH: $*, NAME: $(NAME) [BEGIN] >> $(PSTAT_LOG)
+endif
+	@MAKEFLAGS= $(PSTAT_TIME) $(MAKE) ARCH=$(firstword $(subst -, ,$*)) TCVERSION=$(lastword $(subst -, ,$*)) 2>&1 | tee --append build-$*.log ; \
+	  [ $${PIPESTATUS[0]} -eq 0 ] || false
+ifneq ($(filter 1 on ON,$(PSTAT)),)
+	@$(MSG) MAKELEVEL: $(MAKELEVEL), PARALLEL_MAKE: $(PARALLEL_MAKE), ARCH: $*, NAME: $(NAME) [END] >> $(PSTAT_LOG)
+endif
 
 ####

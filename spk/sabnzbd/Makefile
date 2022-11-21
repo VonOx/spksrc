@@ -1,24 +1,21 @@
 SPK_NAME = sabnzbd
-SPK_VERS = 3.2.0
-SPK_REV = 47
+SPK_VERS = 3.7.0
+SPK_REV = 58
 SPK_ICON = src/sabnzbd.png
 
-BUILD_DEPENDS = cross/python38 cross/setuptools cross/pip cross/wheel
+BUILD_DEPENDS = cross/python310
 DEPENDS = cross/busybox cross/par2cmdline cross/unrar cross/p7zip cross/$(SPK_NAME)
-SPK_DEPENDS = "python38>=3.8.1-1"
+SPK_DEPENDS = "python310"
 
-# To generate full requirements.txt, extend SABnzbd's own
-# requirements.txt with the depedencies of cherrypy and cheroot
-WHEELS = src/requirements.txt
+WHEELS = src/requirements-crossenv.txt src/requirements-pure.txt
 
 MAINTAINER = Safihre
 DESCRIPTION = SABnzbd makes Usenet as simple and streamlined as possible by automating everything we can. All you have to do is add an .nzb. SABnzbd takes over from there, where it will be automatically downloaded, verified, repaired, extracted and filed away with zero human interaction.
 DESCRIPTION_FRE = SABnzbd rend Usenet aussi simple et automatisé que possible. Vous n\'avez qu\'a ajouter un .nzb, SABnzbd s\'occupera du reste sans aucune intervention de votre part : téléchargement, vérification, réparation, extraction et déplacement.
 DESCRIPTION_SPN = SABnzbd hace que Usenet sea lo más simple posible, automatizando todo lo que se puede. Todo lo que tienes que hacer es agregar un archivo .nzb. SABnzbd empieza desde ahí. Tus archivos serán automáticamente descargados, verificados, reparados, descomprimidos y archivados.
-RELOAD_UI = yes
 DISPLAY_NAME = SABnzbd
 STARTABLE = yes
-CHANGELOG = "Update SABnzbd to 3.2.0. Requires the Python 3.8 package."
+CHANGELOG = "Update SABnzbd to 3.7.0."
 
 HOMEPAGE  = https://sabnzbd.org
 LICENSE   = GPL
@@ -39,11 +36,12 @@ POST_STRIP_TARGET = sabnzbd_extra_install
 # Add nice and ionice commands
 ENV += BUSYBOX_CONFIG="nice ionice"
 
+SPK_COMMANDS = bin/7za
+
 include ../../mk/spksrc.spk.mk
 
 .PHONY: sabnzbd_extra_install
 sabnzbd_extra_install:
-	install -m 755 -d $(STAGING_DIR)/var
 	install -m 755 -d $(STAGING_DIR)/var/scripts
 	install -m 755 src/SabToSyno.py $(STAGING_DIR)/var/scripts/SabToSyno.py
 	install -m 600 src/config.ini $(STAGING_DIR)/var/config.ini

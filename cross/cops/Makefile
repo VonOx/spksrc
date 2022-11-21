@@ -1,5 +1,5 @@
 PKG_NAME = cops
-PKG_VERS = 1.0.1
+PKG_VERS = 1.1.3
 PKG_EXT = zip
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://github.com/seblucas/cops/releases/download/$(PKG_VERS)
@@ -11,11 +11,9 @@ HOMEPAGE = https://blog.slucas.fr/en/oss/calibre-opds-php-server
 COMMENT  = Calibre OPDS and HTML PHP Server : light alternative to Calibre content server / Calibre2OPDS.
 LICENSE  = GPL
 
-CONFIGURE_TARGET = nop
-COMPILE_TARGET = nop
 INSTALL_TARGET = cops_install
 
-include ../../mk/spksrc.cross-cc.mk
+include ../../mk/spksrc.install-resources.mk
 
 .PHONY: cops_install
 cops_install:

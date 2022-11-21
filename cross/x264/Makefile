@@ -1,11 +1,11 @@
 PKG_NAME = x264
-PKG_VERS = 20210107-stable
+PKG_VERS = 20220222-stable
 PKG_EXT = tar.gz
-PKG_DOWNLOAD_METHOD = git
-PKG_GIT_HASH = 0d754ec36013fee82978496cd56fbd48824910b3
-PKG_DIST_SITE = https://github.com/mirror/x264.git
+PKG_GIT_HASH = b093bbe7d9bc642c8f24067cbdcc73bb43562eab
+PKG_DIST_NAME = $(PKG_GIT_HASH).$(PKG_EXT)
+PKG_DIST_SITE = https://github.com/mirror/x264/archive
 PKG_DIST_FILE = $(PKG_NAME)-git$(PKG_GIT_HASH).$(PKG_EXT)
-PKG_DIR = $(PKG_NAME)-git$(PKG_GIT_HASH)
+PKG_DIR = $(PKG_NAME)-$(PKG_GIT_HASH)
 
 DEPENDS =
 OPTIONAL_DEPENDS = native/nasm
@@ -15,9 +15,6 @@ COMMENT  = x264 is a free software library and application for encoding video st
 LICENSE  = GPLv2
 
 GNU_CONFIGURE = 1
-
-# YASM_PATH = $(WORK_DIR)/../../../native/yasm/work-native/install/usr/local/bin
-NASM_PATH = $(WORK_DIR)/../../../native/nasm/work-native/install/usr/local/bin
 
 CONFIGURE_ARGS = --enable-shared --prefix=$(INSTALL_PREFIX) --enable-pic --cross-prefix=$(TC_PATH)$(TC_PREFIX)
 
@@ -38,16 +35,15 @@ ENV += x264_ARCH=PPC
 CONFIGURE_ARGS += --disable-asm
 endif
 
-ifeq ($(findstring $(ARCH),$(x64_ARCHS)),$(ARCH))
-DEPENDS += native/nasm
+ifeq ($(findstring $(ARCH),$(i686_ARCHS) $(x64_ARCHS)),$(ARCH))
+BUILD_DEPENDS = native/nasm
+NASM_PATH = $(realpath $(WORK_DIR)/../../../native/nasm/work-native/install/usr/local/bin)
 ENV += AS=$(NASM_PATH)/nasm
 ENV += PATH=$(NASM_PATH):$$PATH
+ifeq ($(findstring $(ARCH),$(x64_ARCHS)),$(ARCH))
 ENV += x264_ARCH=X86_64
 endif
-
 ifeq ($(findstring $(ARCH),$(i686_ARCHS)),$(ARCH))
-DEPENDS += native/nasm
-ENV += AS=$(NASM_PATH)/nasm
-ENV += PATH=$(NASM_PATH):$$PATH
 ENV += x264_ARCH=X86
+endif
 endif

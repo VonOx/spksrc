@@ -1,5 +1,5 @@
 PKG_NAME = readline
-PKG_VERS = 7.0
+PKG_VERS = 8.1
 PKG_EXT = tar.gz
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://ftp.gnu.org/gnu/$(PKG_NAME)
@@ -12,6 +12,9 @@ COMMENT  = Set of functions for use by applications that allow users to edit com
 LICENSE  = https://www.gnu.org/licenses/gpl.html
 
 GNU_CONFIGURE = 1
-CONFIGURE_ARGS = bash_cv_wcwidth_broken=no
+CONFIGURE_ARGS  = --disable-static
+CONFIGURE_ARGS += --disable-install-examples
+CONFIGURE_ARGS += bash_cv_wcwidth_broken=no
+ADDITIONAL_CFLAGS = -O
 
 include ../../mk/spksrc.cross-cc.mk

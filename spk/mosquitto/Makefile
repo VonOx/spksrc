@@ -1,22 +1,23 @@
 SPK_NAME = mosquitto
-SPK_VERS = 1.6.12
-SPK_REV = 11
+SPK_VERS = 2.0.14
+SPK_REV = 13
 SPK_ICON = src/mosquitto.png
-DEPENDS = cross/busybox cross/$(SPK_NAME)
 
-# libwebsockets is not supported for ppc except qoriq
-UNSUPPORTED_ARCHS = $(OLD_PCC_ARCHS)
+DEPENDS = cross/$(SPK_NAME)
+
+UNSUPPORTED_ARCHS = $(OLD_PPC_ARCHS)
 
 MAINTAINER = SynoCommunity
-DESCRIPTION = Mosquitto is an open source message broker that implements the MQTT protocol versions 5.0, 3.1.1 and 3.1.
-RELOAD_UI = yes
+DESCRIPTION = Eclipse Mosquitto is an open source \(EPL/EDL licensed\) message broker that implements the MQTT protocol versions 5.0, 3.1.1 and 3.1.
 DISPLAY_NAME = Mosquitto
-STARTABLE = yes
-CHANGELOG = "Update openssl to 1.1."
+CHANGELOG = "Update mosquitto to v2.0.14."
 HOMEPAGE = https://www.mosquitto.org/
-LICENSE  = EPL/EDL licensed
+LICENSE  = EPL/EDL
+
+WIZARDS_DIR = src/wizard/
 
 SERVICE_USER = auto
+STARTABLE = yes
 # SERVICE_COMMAND is provided there
 SERVICE_SETUP = src/service-setup.sh
 
@@ -26,8 +27,7 @@ NO_SERVICE_SHORTCUT = yes
 
 POST_STRIP_TARGET = mosquitto_extra_install
 
-BUSYBOX_CONFIG = usrmng
-ENV += BUSYBOX_CONFIG="$(BUSYBOX_CONFIG)"
+SPK_COMMANDS = bin/mosquitto_ctrl bin/mosquitto_passwd bin/mosquitto_pub bin/mosquitto_rr bin/mosquitto_sub
 
 include ../../mk/spksrc.spk.mk
 

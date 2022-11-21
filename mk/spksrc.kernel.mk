@@ -7,9 +7,17 @@ include ../../mk/spksrc.kernel-flags.mk
 
 # Configure the included makefiles
 NAME          = $(KERNEL_NAME)
-COOKIE_PREFIX = linux-
 URLS          = $(KERNEL_DIST_SITE)/$(KERNEL_DIST_NAME)
-PKG_DIR       = linux
+COOKIE_PREFIX = $(PKG_NAME)-
+
+ifneq ($(strip $(REQUIRE_KERNEL_MODULE)),)
+PKG_NAME      = linux-$(subst syno-,,$(NAME))
+PKG_DIR       = $(PKG_NAME)
+else
+PKG_NAME      = linux
+PKG_DIR       = $(PKG_NAME)
+endif
+
 ifneq ($(KERNEL_DIST_FILE),)
 LOCAL_FILE    = $(KERNEL_DIST_FILE)
 # download.mk uses PKG_DIST_FILE
@@ -24,12 +32,21 @@ EXTRACT_CMD   = $(EXTRACT_CMD.$(KERNEL_EXT)) --skip-old-files --strip-components
 
 #####
 
-# Configure the included makefiles
+# Always configure the kernel source tree
 PRE_CONFIGURE_TARGET = kernel_pre_configure_target
 CONFIGURE_TARGET     = kernel_configure_target
-PRE_COMPILE_TARGET   = kernel_module_prepare_target
 COMPILE_TARGET       = nop
-COPY_TARGET          = nop
+INSTALL_TARGET       = nop
+
+# Only build kernel module on non-generic archs
+ifneq ($(strip $(REQUIRE_KERNEL_MODULE)),)
+ifneq ($(findstring $(ARCH),$(GENERIC_ARCHS)),$(ARCH))
+PRE_COMPILE_TARGET   = kernel_module_prepare_target
+COMPILE_TARGET       = kernel_module_compile_target
+else
+CONFIGURE_TARGET     = nop
+endif
+endif
 
 #####
 
@@ -56,10 +73,11 @@ include ../../mk/spksrc.configure.mk
 compile: configure
 include ../../mk/spksrc.compile.mk
 
-clean:
-	rm -fr work work-*
+install: compile
+include ../../mk/spksrc.install.mk
 
-all: compile
+plist: install
+include ../../mk/spksrc.plist.mk
 
 ### For make digests
 include ../../mk/spksrc.generate-digests.mk
@@ -67,7 +85,7 @@ include ../../mk/spksrc.generate-digests.mk
 .PHONY: kernel_pre_configure_target
 
 kernel_pre_configure_target:
-	mv $(WORK_DIR)/$(KERNEL_DIST) $(WORK_DIR)/linux
+	mv $(WORK_DIR)/$(KERNEL_DIST) $(WORK_DIR)/$(PKG_DIR)
 
 .PHONY: kernel_configure_target
 
@@ -75,8 +93,8 @@ kernel_configure_target:
 	@$(MSG) "Updating kernel Makefile"
 	$(RUN) sed -i -r 's,^CROSS_COMPILE\s*.+,CROSS_COMPILE\t= $(TC_PATH)$(TC_PREFIX),' Makefile
 	$(RUN) sed -i -r 's,^ARCH\s*.+,ARCH\t= $(KERNEL_ARCH),' Makefile
-# Add "+" to EXTRAVERSION for kernels version >= 4.x
-ifeq ($(shell expr "$(word 1,$(subst ., ,$(TC_KERNEL)))" \>= 4),1)
+# Add "+" to EXTRAVERSION for kernels version >= 4.4
+ifeq ($(call version_ge, ${TC_KERNEL}, 4.4),1)
 	$(RUN) sed -i -r -e 's,^EXTRAVERSION\s*.+,&+,' -e 's,=\+,= \+,' Makefile
 endif
 	test -e $(WORK_DIR)/arch/$(KERNEL_ARCH) || $(RUN) ln -sf $(KERNEL_BASE_ARCH) arch/$(KERNEL_ARCH)
@@ -85,9 +103,9 @@ endif
 	@$(MSG) "Applying $(KERNEL_CONFIG) configuration"
 	$(RUN) cp $(KERNEL_CONFIG) .config
 	@$(MSG) "Set any new symbols to their default value"
-# olddefconfig is not available <= 3.2
-ifeq ($(shell printf '%s\n' "$(TC_KERNEL)" "3.3" | sort -V | head -1),$(TC_KERNEL))
-	@$(MSG) "oldconfig OLD style... $(TC_KERNEL) <= 3.2"
+# olddefconfig is not available < 3.8
+ifeq ($(call version_lt, ${TC_KERNEL}, 3.8),1)
+	@$(MSG) "oldconfig OLD style... $(TC_KERNEL) < 3.8"
 	$(RUN) yes "" | $(MAKE) oldconfig
 else
 	$(RUN) $(MAKE) olddefconfig
@@ -99,7 +117,8 @@ kernel_module_prepare_target:
 	@$(MSG) "DISTRIB_DIR = $(DISTRIB_DIR)"
 	@$(MSG) "Prepare kernel source for module build"
 	$(RUN) $(MAKE) modules_prepare
-ifeq ($(shell expr "$(word 1,$(subst ., ,$(TC_KERNEL)))" \>= 3),1)
+# Call to make kernelversion is not available for kernel <= 3.0
+ifeq ($(call version_ge, ${TC_KERNEL}, 3),1)
 	@$(MSG) "Get kernel version"
 	$(RUN) $(MAKE) kernelversion
 endif
@@ -107,4 +126,20 @@ endif
 .PHONY: kernel_module_compile_target
 
 kernel_module_compile_target:
-	$(RUN) $(MAKE) modules
+	@for module in $(REQUIRE_KERNEL_MODULE); \
+	do \
+	  $(MAKE) kernel_module_build module=$$module ; \
+	done
+
+kernel_module_build:
+	@$(MSG) Building kernel module module=$(module)
+	$(RUN) LDFLAGS="" $(MAKE) -C $(WORK_DIR)/$(PKG_DIR) INSTALL_MOD_PATH=$(STAGING_INSTALL_PREFIX) modules M=$(word 2,$(subst :, ,$(module))) $(firstword $(subst :, ,$(module)))=m $(lastword $(subst :, ,$(module))).ko
+	$(RUN) cat $(word 2,$(subst :, ,$(module)))/modules.order >> $(WORK_DIR)/$(PKG_DIR)/modules.order
+	$(RUN) mkdir -p $(STAGING_INSTALL_PREFIX)/lib/modules/$(subst syno-,,$(NAME))/$(TC_KERNEL)/$(word 2,$(subst :, ,$(module)))
+	install -m 644 $(WORK_DIR)/$(PKG_DIR)/$(word 2,$(subst :, ,$(module)))/$(lastword $(subst :, ,$(module))).ko $(STAGING_INSTALL_PREFIX)/lib/modules/$(subst syno-,,$(NAME))/$(TC_KERNEL)/$(word 2,$(subst :, ,$(module)))
+
+
+clean:
+	rm -fr work work-*
+
+all: install plist

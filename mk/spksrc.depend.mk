@@ -1,6 +1,6 @@
 ### Dependency rules
 #   Build all dependencies listed in DEPENDS.
-# Target are executed in the following order:
+# Targets are executed in the following order:
 #  depend_msg_target
 #  pre_depend_target   (override with PRE_DEPEND_TARGET)
 #  depend_target       (override with DEPEND_TARGET)
@@ -40,6 +40,9 @@ ifeq ($(strip $(REQUIRE_KERNEL)),)
 KERNEL_DEPEND = 
 else
 KERNEL_DEPEND = kernel/syno-$(ARCH)-$(TCVERSION)
+ifneq ($(strip $(REQUIRE_KERNEL_MODULE)),)
+KERNEL_MODULE_DEPEND = $(filter-out $(GENERIC_ARCHS),$(addprefix kernel/syno-,$(filter $(addprefix %-,$(filter $(firstword $(subst ., ,$(TCVERSION))).%,$(SUPPORTED_KERNEL_VERSIONS))),$(filter-out $(addsuffix -%,$(UNSUPPORTED_ARCHS)),$(LEGACY_ARCHS)))))
+endif
 endif
 
 depend_msg_target:

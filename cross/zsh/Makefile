@@ -1,8 +1,8 @@
 PKG_NAME = zsh
-PKG_VERS = 5.8
+PKG_VERS = 5.8.1
 PKG_EXT = tar.xz
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
-PKG_DIST_SITE = https://www.zsh.org/pub
+PKG_DIST_SITE = https://www.zsh.org/pub/old
 PKG_DIR = $(PKG_NAME)-$(PKG_VERS)
 
 DEPENDS = cross/ncursesw
@@ -21,7 +21,7 @@ else
 	BUILD_MSG = "Building zsh with dynamically linked modules."
 endif
 
-INSTALL_TARGET = zsh_install
+INSTALL_MAKE_OPTIONS = install DESTDIR=$(INSTALL_DIR)
 
 include ../../mk/spksrc.cross-cc.mk
 
@@ -34,7 +34,3 @@ link-zsh-modules:
 .PHONY: zsh_pre_compile
 zsh_pre_compile:
 	@$(MSG) $(BUILD_MSG)
-
-.PHONY: zsh_install
-zsh_install:
-	umask 022; $(RUN) $(MAKE) install DESTDIR=$(INSTALL_DIR)

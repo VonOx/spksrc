@@ -1,5 +1,5 @@
 PKG_NAME = libass
-PKG_VERS = 0.15.0
+PKG_VERS = 0.16.0
 PKG_EXT = tar.xz
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://github.com/libass/libass/releases/download/$(PKG_VERS)
@@ -12,5 +12,7 @@ COMMENT  = libass is a portable subtitle renderer for the ASS/SSA (Advanced Subs
 LICENSE  = ICS
 
 GNU_CONFIGURE = 1
+CONFIGURE_ARGS = --disable-static
+ADDITIONAL_CFLAGS = -O
 
 include ../../mk/spksrc.cross-cc.mk

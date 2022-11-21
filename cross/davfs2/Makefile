@@ -1,9 +1,9 @@
 PKG_NAME = davfs2
-PKG_VERS = 1.6.0
+PKG_VERS = 1.6.1
 PKG_EXT = tar.gz
 PKG_DIR = $(PKG_NAME)-$(PKG_VERS)
 PKG_DIST_NAME = $(PKG_NAME)-$(PKG_VERS).$(PKG_EXT)
-PKG_DIST_SITE = https://download.savannah.gnu.org/releases/$(PKG_NAME)
+PKG_DIST_SITE = https://download.savannah.gnu.org/releases/davfs2
 
 DEPENDS = cross/neon cross/libtool
 DESCRIPTION = Mount a WebDAV resource as a regular file system

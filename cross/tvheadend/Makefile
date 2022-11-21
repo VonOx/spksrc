@@ -1,14 +1,21 @@
 PKG_NAME = tvheadend
 PKG_VERS = 4.3
 PKG_EXT = tar.gz
-PKG_DOWNLOAD_METHOD = git
-PKG_GIT_HASH = 9ed76c0a176b055a57b6e8bd2e0b6e29409269a9
-PKG_DIST_SITE = https://github.com/tvheadend/tvheadend.git
+# git hash from November 10th 2022
+PKG_GIT_HASH = 52c3ed3ef17eeccddc6a4cf7c0d7151c2823438f
+PKG_DIST_NAME = $(PKG_GIT_HASH).$(PKG_EXT)
+PKG_DIST_SITE = https://github.com/tvheadend/tvheadend/archive
 PKG_DIST_FILE = $(PKG_NAME)-git$(PKG_GIT_HASH).$(PKG_EXT)
-PKG_DIR = $(PKG_NAME)-git$(PKG_GIT_HASH)
+PKG_DIR = $(PKG_NAME)-$(PKG_GIT_HASH)
 
-DEPENDS = cross/openssl cross/uriparser cross/pcre2 cross/libiconv
+DEPENDS  = cross/openssl cross/gnutls
+DEPENDS += cross/uriparser cross/pcre2 cross/libiconv cross/fontconfig
 DEPENDS += cross/libhdhomerun cross/libdvbcsa cross/dvb-apps cross/pngquant
+DEPENDS += cross/curl
+
+# PPC archs except qoriq are not supported
+# https://tvheadend.org/issues/5060
+UNSUPPORTED_ARCHS = $(OLD_PPC_ARCHS)
 
 HOMEPAGE = https://tvheadend.org/
 COMMENT  = Tvheadend is a TV streaming server and recorder for Linux, FreeBSD and Android supporting DVB-S, DVB-S2, DVB-C, DVB-T, ATSC, ISDB-T, IPTV, SAT IP and HDHomeRun as input sources. Tvheadend offers HTTP, HTSP and SAT IP streaming.
@@ -16,8 +23,10 @@ LICENSE  = GPL v3
 
 GNU_CONFIGURE = 1
 PRE_CONFIGURE_TARGET = tvheadend_pre_configure
+POST_INSTALL_TARGET = tvheadend_post_install
 
-CONFIGURE_ARGS = --enable-imagecache --enable-bundle --enable-trace --release
+CONFIGURE_ARGS  = --python=/usr/bin/python3
+CONFIGURE_ARGS += --enable-imagecache --enable-bundle --enable-trace --release
 CONFIGURE_ARGS += --disable-bintray_cache --disable-avahi
 CONFIGURE_ARGS += --enable-dvbcsa --enable-pngquant
 CONFIGURE_ARGS += --disable-hdhomerun_static --enable-hdhomerun_client
@@ -41,7 +50,7 @@ endif
 
 include ../../mk/spksrc.cross-cc.mk
 
-ifeq ($(findstring $(ARCH),$(ARMv5_ARCHS)),$(ARCH))
+ifeq ($(call version_lt, $(TC_GCC), 5.0),1)
 CONFIGURE_ARGS += --nowerror
 endif
 
@@ -56,3 +65,9 @@ endif
 tvheadend_pre_configure:
 	# Fix so mkbundle finds the pngquant binary
 	@$(RUN) sed -i.bak "s|^pngquant_bin = '/usr|pngquant_bin = '$(STAGING_INSTALL_PREFIX)|g" support/mkbundle
+
+.PHONY: tvheadend_post_install
+tvheadend_post_install:
+	# Enforce python3
+	@$(RUN) sed -i 's|env python$$|env python3|g' $(INSTALL_DIR)/$(INSTALL_PREFIX)/bin/tv_meta_tmdb.py
+	@$(RUN) sed -i 's|env python$$|env python3|g' $(INSTALL_DIR)/$(INSTALL_PREFIX)/bin/tv_meta_tvdb.py

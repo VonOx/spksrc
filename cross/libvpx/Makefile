@@ -1,5 +1,5 @@
 PKG_NAME = libvpx
-PKG_VERS = 1.9.0
+PKG_VERS = 1.12.0
 PKG_EXT = tar.gz
 PKG_DIST_NAME = v$(PKG_VERS).$(PKG_EXT)
 PKG_DIST_SITE = https://github.com/webmproject/libvpx/archive
@@ -9,13 +9,13 @@ PKG_DIR = $(PKG_NAME)-$(PKG_VERS)
 DEPENDS =
 OPTIONAL_DEPENDS = native/yasm
 
+UNSUPPORTED_ARCHS = $(OLD_PPC_ARCHS)
+
 HOMEPAGE = https://www.webmproject.org/code/
 COMMENT  = WebM VP8/VP9 Codec
 LICENSE = https://raw.githubusercontent.com/webmproject/libvpx/master/LICENSE
 
 INSTALL_TARGET = libvpx_install
-
-YASM_PATH=$(WORK_DIR)/../../../native/yasm/work-native/install/usr/local/bin
 
 CONFIGURE_ARGS += --disable-static --enable-shared --prefix=$(INSTALL_PREFIX)
 CONFIGURE_ARGS += --enable-vp8 --enable-vp9 --disable-examples --disable-docs --disable-unit_tests
@@ -39,16 +39,17 @@ ifeq ($(findstring $(ARCH),$(ARMv8_ARCHS)),$(ARCH))
 CONFIGURE_ARGS += --target=armv8-linux-gcc
 endif
 
+ifeq ($(findstring $(ARCH),$(i686_ARCHS) $(x64_ARCHS)),$(ARCH))
+BUILD_DEPENDS = native/yasm
+YASM_PATH = $(realpath $(WORK_DIR)/../../../native/yasm/work-native/install/usr/local/bin)
+ENV += PATH=$(YASM_PATH):$$PATH
+CONFIGURE_ARGS += --as=yasm
 ifeq ($(findstring $(ARCH),$(i686_ARCHS)),$(ARCH))
-DEPENDS += native/yasm
-ENV += PATH=$(YASM_PATH):$$PATH
-CONFIGURE_ARGS += --target=x86-linux-gcc --as=yasm
+CONFIGURE_ARGS += --target=x86-linux-gcc
 endif
-
 ifeq ($(findstring $(ARCH),$(x64_ARCHS)),$(ARCH))
-DEPENDS += native/yasm
-ENV += PATH=$(YASM_PATH):$$PATH
-CONFIGURE_ARGS += --target=x86_64-linux-gcc --as=yasm
+CONFIGURE_ARGS += --target=x86_64-linux-gcc
+endif
 endif
 
 ifeq ($(findstring $(ARCH),$(PPC_ARCHS)),$(ARCH))
