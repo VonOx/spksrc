@@ -1,5 +1,5 @@
 SPK_NAME = gladysassistant
-SPK_VERS = 20213003
+SPK_VERS = 20221121
 SPK_REV = 1
 SPK_ICON = src/$(SPK_NAME).png
 SPK_DEPENDS = "Docker>=18.09.0-0506"
@@ -15,6 +15,10 @@ RELOAD_UI = yes
 STARTABLE = yes
 DISPLAY_NAME = Gladys Assistant
 CHANGELOG = ""
+SERVICE_SETUP = src/service-setup.sh
+SERVICE_PORT = 8420
+SERVICE_PORT_TITLE = $(DISPLAY_NAME)
+ADMIN_PORT = $(SERVICE_PORT)
 
 UNSUPPORTED_ARCHS = $(ARM_ARCHS) $(PPC_ARCHS) $(i686_ARCHS)
 
@@ -22,12 +26,10 @@ HOMEPAGE   = https://gladysassistant.com/
 LICENSE    = Apache License 2.0
 HELPURL    = https://gladysassistant.com/docs/
 
-WIZARDS_DIR = src/wizard/
+WIZARDS_DIR = src/wizard
+SERVICE_WIZARD_SHARE = wizard_data_folder
 
-SERVICE_SETUP = src/service-setup.sh
 
-#DSM UI integration
-SERVICE_PORT = 8420
 
 INSTALL_DEP_SERVICES = Docker
 START_DEP_SERVICES = Docker

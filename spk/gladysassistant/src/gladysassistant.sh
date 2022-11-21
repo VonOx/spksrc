@@ -1,22 +1,21 @@
 #!/bin/sh
 
-CONFIG_FILE="/usr/local/gladysassistant/etc/gladysassistant.json"
+host_folder="${wizard_volume:=/volume1}/${wizard_docker_share:=/docker}/gladysassistant"
+
 
 runGladys() {
-    GLADYS_DATA="$(jq --raw-output '.data // "/usr/share/gladysassistant"' ${CONFIG_FILE})"
-
-    /usr/local/bin/docker rm --force hassio_supervisor >/dev/null || true
     /usr/local/bin/docker run \
-        --restart=always \
+        --restart=unless-stopped \
         --privileged \
         --network=host \
         --name gladys \
+        --log-opt max-size=100m \
         -e NODE_ENV=production \
         -e SERVER_PORT=8420 \
-        -e TZ=Europe/Paris \
-        -e SQLITE_FILE_PATH=$GLADYS_DATA/gladys-production.db \
+        -e SQLITE_FILE_PATH=$host_folder/gladys-production.db \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v $GLADYS_DATA:/var/lib/gladysassistant \
+        -v $host_folder:/var/lib/gladysassistant \
+        -v /etc/localtime:/etc/localtime:ro \
         -v /dev:/dev \
         gladysassistant/gladys:v4
 }
