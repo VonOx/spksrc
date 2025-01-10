@@ -2,9 +2,27 @@
 # Configuration for python wheel build
 #
 
+##### rust specific configurations
+include ../../mk/spksrc.cross-rust-env.mk
+
+# set PYTHON_*_PREFIX if unset
+ifeq ($(strip $(PYTHON_STAGING_INSTALL_PREFIX)),)
+PYTHON_STAGING_INSTALL_PREFIX = $(STAGING_INSTALL_PREFIX)
+PYTHON_PREFIX = $(INSTALL_PREFIX)
+endif
+
+# set OPENSSL_*_PREFIX if unset
+ifeq ($(strip $(OPENSSL_STAGING_PREFIX)),)
+OPENSSL_STAGING_PREFIX = $(STAGING_INSTALL_PREFIX)
+OPENSSL_PREFIX = $(INSTALL_PREFIX)
+endif
+
 # Enable pure-python packaging
 ifeq ($(strip $(WHEELS_PURE_PYTHON_PACKAGING_ENABLE)),)
 WHEELS_PURE_PYTHON_PACKAGING_ENABLE = FALSE
+WHEELS_2_DOWNLOAD = $(patsubst %$(WHEELS_PURE_PYTHON),,$(WHEELS))
+else
+WHEELS_2_DOWNLOAD = $(WHEELS)
 endif
 
 ifeq ($(strip $(WHEELS_DEFAULT)),)
@@ -39,9 +57,9 @@ WHEELS_DEFAULT_REQUIREMENT = $(WHEELS_CROSSENV_COMPILE)
 endif
 
 # For generating abi3 wheels with limited
-# python API (e.g cp36 = Python 3.6)
+# python API (e.g cp37 = Python 3.7)
 ifeq ($(strip $(PYTHON_LIMITED_API)),)
-PYTHON_LIMITED_API = cp36
+PYTHON_LIMITED_API = cp37
 endif
 
 #
